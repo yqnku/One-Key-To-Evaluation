@@ -8,7 +8,7 @@ Using in 222.30.32.10
 
 2.For [Android](https://github.com/yqnku/One-Key-To-Evaluation/releases/download/V1.0/CourseHelperInAndroid.apk)
 
-3.For iPhone,请在应用商店中搜索NKU Helper
+3.For [iPhone](https://itunes.apple.com/cn/app/nku-helper/id967791857?l=en&mt=8)
 
 ##Thanks For Using
 
