@@ -9,5 +9,5 @@ setup(
         "dll_excludes": ["MSVCP90.dll"], 
       } 
     }, 
-    windows=[{"script": "Pingjiao-Win-GUI.py"}]
+    windows=[{"script": "PingJiao.py"}]
 ) 
