@@ -10,5 +10,7 @@ Using in 222.30.32.10
 
 3.For [iPhone](https://itunes.apple.com/cn/app/nku-helper/id967791857?l=en&mt=8)
 
+4.For [Mac OS X](https://github.com/yqnku/One-Key-To-Evaluation/releases/latest)
+
 ##Thanks For Using
 

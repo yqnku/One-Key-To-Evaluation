@@ -1,132 +1,159 @@
+# coding: utf-8
 import httplib
 import re
-import os
 import binascii
 import wx
+from io import BytesIO
+
 
 def Encrypt(pwd):
     publicKey = int("00b6b7f8531b19980c66ae08e3061c6295a1dfd9406b32b202a59737818d75dea03de45d44271a1473af8062e8a4df927f031668ba0b1ec80127ff323a24cd0100bef4d524fdabef56271b93146d64589c9a988b67bc1d7a62faa6c378362cfd0a875361ddc7253aa0c0085dd5b17029e179d64294842862e6b0981ca1bde29979",16)
     pwd = pwd[::-1]
     pwdAscii = binascii.b2a_hex(pwd)
-    pwdAscii = int(pwdAscii,16)
-    password = pwdAscii**65537%publicKey
+    pwdAscii = int(pwdAscii, 16)
+    password = pwdAscii ** 65537 % publicKey
     password = hex(password)[2:-1]
     if len(password) != 256:
-        add = '0'* (256-len(password))
+        add = '0' * (256 - len(password))
         password = add + password
     return password
 
+
 class MyFrame(wx.Frame):
-    def __init__(self, calc = False):
-        wx.Frame.__init__(self, parent = None, title = "Ò»¼üÆÀ½Ì", size = (280, 380))
-        self.panel = wx.Panel(self, -1)       
-        label_id=wx.StaticText(self.panel,1008,"Ñ§ºÅ")
+    def __init__(self, calc=False):
+        wx.Frame.__init__(self, parent=None, title=u"ä¸€é”®è¯„æ•™", size=(280, 380))
+        self.panel = wx.Panel(self, -1)
+        label_id = wx.StaticText(self.panel, 1008, u"å­¦å·")
         label_id.SetPosition(wx.Point(15, 15))
-        label_psw=wx.StaticText(self.panel,1009,"ÃÜÂë")
+        label_psw = wx.StaticText(self.panel, 1009, u"å¯†ç ")
         label_psw.SetPosition(wx.Point(15, 65))
-        label_val=wx.StaticText(self.panel,1010,"ÑéÖ¤Âë")
+        label_val = wx.StaticText(self.panel, 1010, u"éªŒè¯ç ")
         label_val.SetPosition(wx.Point(15, 165))
-        
-        self.text_id=wx.TextCtrl(self.panel,1005)
+
+        self.text_id = wx.TextCtrl(self.panel, 1005)
         self.text_id.SetPosition(wx.Point(120, 15))
-        self.text_psw=wx.TextCtrl(self.panel,1006,style=wx.TE_PASSWORD)
+        self.text_psw = wx.TextCtrl(self.panel, 1006, style=wx.TE_PASSWORD)
         self.text_psw.SetPosition(wx.Point(120, 65))
-        self.text_val=wx.TextCtrl(self.panel,1007)
+        self.text_val = wx.TextCtrl(self.panel, 1007)
         self.text_val.SetPosition(wx.Point(120, 165))
-        
-        button = wx.Button(self.panel, 1003, "ÍË³ö")
+
+        button = wx.Button(self.panel, 1003, u"é€€å‡º")
         button.SetPosition(wx.Point(120, 215))
         wx.EVT_BUTTON(self, 1003, self.OnCloseMe)
         wx.EVT_CLOSE(self, self.OnCloseWindow)
 
-        self.button = wx.Button(self.panel, 1004, "ÆÀ½Ì")
+        self.button = wx.Button(self.panel, 1004, u"è¯„æ•™")
         self.button.SetPosition(wx.Point(30, 215))
         wx.EVT_BUTTON(self, 1004, self.OnPressMe)
 
-        #get cookie
-        conn=httplib.HTTPConnection("222.30.32.10")
-        conn.request("GET","/")
-        res=conn.getresponse()
-        self.cookie=res.getheader("Set-Cookie")
+        # get cookie
+        conn = httplib.HTTPConnection("222.30.32.10")
+        conn.request("GET", "/")
+        res = conn.getresponse()
+        self.cookie = res.getheader("Set-Cookie")
         conn.close()
-        self.headers= {"Content-Type":"application/x-www-form-urlencoded","Cookie":self.cookie}
-        #get ValidateCode
-        conn=httplib.HTTPConnection("222.30.32.10")
-        conn.request("GET","/ValidateCode","",self.headers)
-        res=conn.getresponse()
-        f=open("ValidateCode.jpg","w+b")
-        f.write(res.read())
-        f.close()
+        self.headers = {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Cookie": self.cookie,
+        }
+        # get ValidateCode
+        conn = httplib.HTTPConnection("222.30.32.10")
+        conn.request("GET", "/ValidateCode", "", self.headers)
+        res = conn.getresponse()
+        validation_img = BytesIO(res.read())
         conn.close()
 
-        image=wx.Image("ValidateCode.jpg",wx.BITMAP_TYPE_JPEG)
-        val=wx.StaticBitmap(self.panel,bitmap=image.ConvertToBitmap())
+        # image = wx.Image("ValidateCode.jpg", wx.BITMAP_TYPE_JPEG)
+        # create image object directly from a bytes buffer
+        image = wx.ImageFromStream(validation_img, type=wx.BITMAP_TYPE_ANY)
+        val = wx.StaticBitmap(self.panel, bitmap=image.ConvertToBitmap())
         val.SetPosition(wx.Point(15, 115))
 
     def OnCloseMe(self, event):
         self.Close(True)
 
     def OnPressMe(self, event):
-        #ÏÔÊ¾ÇëÉÔºò
-        self.button.SetLabel("ÇëÉÔºò")
-        
-        stu_id=self.text_id.GetValue()
-        psw=self.text_psw.GetValue()
-        val=self.text_val.GetValue()
-        params="operation=&usercode_text="+stu_id+"&userpwd_text="+Encrypt(psw)+"&checkcode_text="+val+"&submittype=%C8%B7+%C8%CF"
-        conn=httplib.HTTPConnection("222.30.32.10")
-        conn.request("POST","/stdloginAction.do",params,self.headers);
-        res=conn.getresponse()
-        loginInfo = res.read().decode('gb2312')
-        if loginInfo.find(unicode("ÓÃ»§²»´æÔÚ»òÃÜÂë´íÎó","gb2312")) != -1:
-            info = "ÓÃ»§²»´æÔÚ»òÃÜÂë´íÎó\nÇëÖØĞÂ´ò¿ªÈí¼şºóÖØÊÔ"
-        elif loginInfo.find(unicode("ÇëÊäÈëÕıÈ·µÄÑéÖ¤Âë","gb2312")) != -1:
-            info = "ÑéÖ¤ÂëÊäÈë´íÎó\nÇëÖØĞÂ´ò¿ªÈí¼şºóÖØÊÔ"
-        elif loginInfo.find('stdtop') == -1:
-            info = "Î´Öª´íÎó"
-        else:
-            info = "µÇÂ¼³É¹¦"
+        # æ˜¾ç¤ºè¯·ç¨å€™
+        self.button.SetLabel(u"è¯·ç¨å€™")
 
-        self.label_status=wx.StaticText(self.panel,1009,info)
+        stu_id = self.text_id.GetValue()
+        psw = self.text_psw.GetValue()
+        val = self.text_val.GetValue()
+        params = ''.join((
+            "operation=&usercode_text=", stu_id,
+            "&userpwd_text=", Encrypt(psw),
+            "&checkcode_text=", val,
+            "&submittype=%C8%B7+%C8%CF",
+        ))
+        conn = httplib.HTTPConnection("222.30.32.10")
+        conn.request("POST", "/stdloginAction.do", params, self.headers)
+        res = conn.getresponse()
+        loginInfo = res.read().decode('gb2312')
+        if loginInfo.find(u"ç”¨æˆ·ä¸å­˜åœ¨æˆ–å¯†ç é”™è¯¯") != -1:
+            info = u"ç”¨æˆ·ä¸å­˜åœ¨æˆ–å¯†ç é”™è¯¯\nè¯·é‡æ–°æ‰“å¼€è½¯ä»¶åé‡è¯•"
+        elif loginInfo.find(u"è¯·è¾“å…¥æ­£ç¡®çš„éªŒè¯ç ") != -1:
+            info = u"éªŒè¯ç è¾“å…¥é”™è¯¯\nè¯·é‡æ–°æ‰“å¼€è½¯ä»¶åé‡è¯•"
+        elif loginInfo.find('stdtop') == -1:
+            info = u"æœªçŸ¥é”™è¯¯"
+        else:
+            info = u"ç™»å½•æˆåŠŸ"
+
+        self.label_status = wx.StaticText(self.panel, 1009, info)
         self.label_status.SetPosition(wx.Point(50, 248))
-        if info != "µÇÂ¼³É¹¦":
+        if info != u"ç™»å½•æˆåŠŸ":
             return
-        
+
         conn.close()
-        conn=httplib.HTTPConnection("222.30.32.10")
-        conn.request("GET","/evaluate/stdevatea/queryCourseAction.do","",self.headers);
-        res=conn.getresponse()
-        content=res.read()
-        num=int(re.findall(r"¹² ([0-9]*) Ïî",content)[0])
+        conn = httplib.HTTPConnection("222.30.32.10")
+        conn.request("GET", "/evaluate/stdevatea/queryCourseAction.do", "", self.headers);
+        res = conn.getresponse()
+        content = res.read().decode('gb2312')
+        num = re.findall(u"å…± ([0-9]*) é¡¹", content)
+        if num:
+            num = int(num)
+        else:
+            if content.find(u'æœªå¼€æ”¾'):
+                num = -1
+            else:
+                num = -2
         conn.close()
-        failcount=0
+        failcount = 0
         for i in range(num):
-            conn=httplib.HTTPConnection("222.30.32.10")
+            conn = httplib.HTTPConnection("222.30.32.10")
             conn.request("GET","/evaluate/stdevatea/queryTargetAction.do?operation=target&index="+str(i),"",self.headers);
-            res=conn.getresponse()
-            content=res.read()
-            content=content.replace("¸Ã½ÌÊ¦¸øÄãµÄ×ÜÌåÓ¡Ïó","¸Ã½ÌÊ¦¸øÄãµÄ×ÜÌåÓ¡Ïó£¨10£©")
-            #ÖĞÎÄÀ¨ºÅ
-            item=re.findall(r"£¨([0-9]*)£©",content)
+            res = conn.getresponse()
+            content = res.read()
+            content = content.replace(u"è¯¥æ•™å¸ˆç»™ä½ çš„æ€»ä½“å°è±¡", "è¯¥æ•™å¸ˆç»™ä½ çš„æ€»ä½“å°è±¡ï¼ˆ10ï¼‰")
+            # ä¸­æ–‡æ‹¬å·
+            item = re.findall(u"ï¼ˆ([0-9]*)ï¼‰",content)
             conn.close()
-            #submit
-            conn=httplib.HTTPConnection("222.30.32.10")
-            params="operation=Store"
-            
-            for j in range(len(item)):  params+=("&array["+str(j)+"]="+item[j])
-            params+="&opinion="
-            self.headers= {"Content-Type":"application/x-www-form-urlencoded"
-                  ,"Cookie":self.cookie,"Referer":"http://222.30.32.10/evaluate/stdevatea/queryTargetAction.do?operation=target&index="+str(i)}
-            conn.request("POST","/evaluate/stdevatea/queryTargetAction.do",params,self.headers);
-            rescontent=conn.getresponse().read()
-            if -1==rescontent.find("³É¹¦±£´æ£¡"):failcount+=1
+            # submit
+            conn = httplib.HTTPConnection("222.30.32.10")
+            params = "operation=Store"
+
+            for j in range(len(item)):
+                params += ("&array["+str(j)+"]="+item[j])
+            params += "&opinion="
+            self.headers = {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Cookie": self.cookie,
+                "Referer": "http://222.30.32.10/evaluate/stdevatea/queryTargetAction.do?operation=target&index=" + str(i),
+            }
+            conn.request("POST", "/evaluate/stdevatea/queryTargetAction.do", params, self.headers)
+            rescontent = conn.getresponse().read()
+            if -1 == rescontent.find(u"æˆåŠŸä¿å­˜ï¼"):
+                failcount += 1
             conn.close()
-        #ÌáÊ¾³É¹¦
-        s="Íê³É!\n×Ü¹²: %d\n³É¹¦: %d" % (num,num-failcount)
-        self.label_status=wx.StaticText(self.panel,1008,s)
-        self.label_status.SetPosition(wx.Point(50, 265))    
-        os.remove("ValidateCode.jpg")
-        
+        if num >= 0:
+            # æç¤ºæˆåŠŸ
+            s = u"å®Œæˆ!\næ€»å…±: %d\næˆåŠŸ: %d" % (num, num - failcount)
+        elif num == -1:
+            s = u'è¯„æ•™ç³»ç»Ÿæœªå¼€æ”¾'
+        else:
+            s = u'æœªçŸ¥é”™è¯¯'
+        self.label_status = wx.StaticText(self.panel, 1008, s)
+        self.label_status.SetPosition(wx.Point(50, 265))
+
     def OnCloseWindow(self, event):
         self.Destroy()
 if __name__ == "__main__":
